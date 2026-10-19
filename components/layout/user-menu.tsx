@@ -3,14 +3,7 @@
 import Link from "next/link";
 import { Settings, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { SignOutButton } from "@/components/layout/sign-out-button";
 import { PATHS } from "@/lib/routes";
 
@@ -36,26 +29,9 @@ export function UserMenu({ email, fullName, avatarUrl }: UserMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="h-9 gap-2 px-2"
-          aria-label="Account menu"
-        >
-          <span className="flex size-7 items-center justify-center overflow-hidden rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-            {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={avatarUrl}
-                alt=""
-                className="size-full object-cover"
-              />
-            ) : (
-              initials(fullName, email)
-            )}
-          </span>
-          <span className="hidden max-w-[10rem] truncate text-sm sm:inline">
-            {fullName ?? email}
-          </span>
+        <Button variant="ghost" className="h-9 gap-2 px-2" aria-label="Account menu">
+          <span className="flex size-7 items-center justify-center overflow-hidden rounded-full bg-primary text-xs font-semibold text-primary-foreground">{avatarUrl ? <img src={avatarUrl} alt="" className="size-full object-cover" /> : initials(fullName, email)}</span>
+          <span className="hidden max-w-40 truncate text-sm sm:inline">{fullName ?? email}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
@@ -75,8 +51,7 @@ export function UserMenu({ email, fullName, avatarUrl }: UserMenuProps) {
           asChild
           // Radix closes the menu on select, which would unmount the button
           // mid-transition and abort the cache purge.
-          onSelect={(e) => e.preventDefault()}
-        >
+          onSelect={(e) => e.preventDefault()}>
           <SignOutButton />
         </DropdownMenuItem>
       </DropdownMenuContent>

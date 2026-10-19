@@ -1,38 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
-import { toast } from "sonner";
-import {
-  ArrowDownLeft,
-  ArrowLeft,
-  ArrowUpRight,
-  Loader2,
-  Printer,
-  Trash2,
-  Truck,
-} from "lucide-react";
+import { useState } from "react";
+
+import { ArrowDownLeft, ArrowLeft, ArrowUpRight, Loader2, Printer, Trash2, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { KhataEntryDialog } from "@/components/khata/khata-entry-dialog";
-import {
-  deleteKhataEntry,
-  restoreKhataEntry,
-} from "@/app/(app)/ledgers/khata/actions";
+import { deleteKhataEntry, restoreKhataEntry } from "@/app/(app)/ledgers/khata/actions";
 import { useUndoableDelete } from "@/lib/use-undoable-delete";
 import { balanceLabel } from "@/lib/khata";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -50,10 +26,7 @@ export function KhataLedger({ detail }: { detail: KhataContactDetail }) {
   const { remove, isPending: isDeleting } = useUndoableDelete({
     onDelete: (id: string) => deleteKhataEntry(id, contact.id),
     onRestore: (row) => restoreKhataEntry(row, contact.id),
-    deletedMessage: (row) =>
-      row
-        ? `${row.direction === "gave" ? "Given" : "Got"} ${formatCurrency(Number(row.amount))} deleted.`
-        : "Entry deleted.",
+    deletedMessage: (row) => (row ? `${row.direction === "gave" ? "Given" : "Got"} ${formatCurrency(Number(row.amount))} deleted.` : "Entry deleted."),
     restoredMessage: "Entry restored.",
   });
 
@@ -74,9 +47,7 @@ export function KhataLedger({ detail }: { detail: KhataContactDetail }) {
 
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {contact.name}
-            </h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{contact.name}</h1>
             <p className="text-sm text-muted-foreground">
               {contact.phone ?? "No phone"} · {contact.entryCount} entr
               {contact.entryCount === 1 ? "y" : "ies"}
@@ -104,21 +75,8 @@ export function KhataLedger({ detail }: { detail: KhataContactDetail }) {
         <Card>
           <CardContent className="flex flex-wrap items-center justify-between gap-4 p-6">
             <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                {balanceLabel(contact.balance)}
-              </p>
-              <p
-                className={cn(
-                  "text-3xl font-semibold tabular-nums",
-                  contact.balance > 0
-                    ? "text-profit"
-                    : contact.balance < 0
-                      ? "text-expense"
-                      : "",
-                )}
-              >
-                {formatCurrency(Math.abs(contact.balance))}
-              </p>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">{balanceLabel(contact.balance)}</p>
+              <p className={cn("text-3xl font-semibold tabular-nums", contact.balance > 0 ? "text-profit" : contact.balance < 0 ? "text-expense" : "")}>{formatCurrency(Math.abs(contact.balance))}</p>
             </div>
             <div className="flex gap-2 no-print">
               <Button variant="destructive" onClick={() => openEntry("gave")}>
@@ -136,15 +94,11 @@ export function KhataLedger({ detail }: { detail: KhataContactDetail }) {
         <Card>
           <CardHeader>
             <CardTitle>Entries</CardTitle>
-            <CardDescription>
-              Oldest first, with a running balance.
-            </CardDescription>
+            <CardDescription>Oldest first, with a running balance.</CardDescription>
           </CardHeader>
           <CardContent>
             {entries.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                No entries yet.
-              </p>
+              <p className="py-8 text-center text-sm text-muted-foreground">No entries yet.</p>
             ) : (
               <Table>
                 <TableHeader>
@@ -160,30 +114,11 @@ export function KhataLedger({ detail }: { detail: KhataContactDetail }) {
                 <TableBody>
                   {entries.map((e) => (
                     <TableRow key={e.id} className="print-keep-together">
-                      <TableCell className="whitespace-nowrap text-muted-foreground">
-                        {formatDate(e.date)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {e.notes ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums text-expense">
-                        {e.direction === "gave"
-                          ? formatCurrency(Number(e.amount))
-                          : "—"}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums text-profit">
-                        {e.direction === "got"
-                          ? formatCurrency(Number(e.amount))
-                          : "—"}
-                      </TableCell>
-                      <TableCell
-                        className={cn(
-                          "text-right font-medium tabular-nums",
-                          e.balance > 0 ? "text-profit" : e.balance < 0 ? "text-expense" : "",
-                        )}
-                      >
-                        {formatCurrency(Math.abs(e.balance))}
-                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-muted-foreground">{formatDate(e.date)}</TableCell>
+                      <TableCell className="text-muted-foreground">{e.notes ?? "—"}</TableCell>
+                      <TableCell className="text-right tabular-nums text-expense">{e.direction === "gave" ? formatCurrency(Number(e.amount)) : "—"}</TableCell>
+                      <TableCell className="text-right tabular-nums text-profit">{e.direction === "got" ? formatCurrency(Number(e.amount)) : "—"}</TableCell>
+                      <TableCell className={cn("text-right font-medium tabular-nums", e.balance > 0 ? "text-profit" : e.balance < 0 ? "text-expense" : "")}>{formatCurrency(Math.abs(e.balance))}</TableCell>
                       <TableCell className="text-right no-print">
                         <Button
                           variant="ghost"
@@ -194,13 +129,8 @@ export function KhataLedger({ detail }: { detail: KhataContactDetail }) {
                             setDeletingId(e.id);
                             remove(e.id);
                           }}
-                          disabled={isDeleting && deletingId === e.id}
-                        >
-                          {isDeleting && deletingId === e.id ? (
-                            <Loader2 className="size-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="size-4" />
-                          )}
+                          disabled={isDeleting && deletingId === e.id}>
+                          {isDeleting && deletingId === e.id ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -212,13 +142,7 @@ export function KhataLedger({ detail }: { detail: KhataContactDetail }) {
         </Card>
       </div>
 
-      <KhataEntryDialog
-        open={entryOpen}
-        onOpenChange={setEntryOpen}
-        contactId={contact.id}
-        initialDirection={direction}
-      />
-
+      <KhataEntryDialog open={entryOpen} onOpenChange={setEntryOpen} contactId={contact.id} initialDirection={direction} />
     </div>
   );
 }

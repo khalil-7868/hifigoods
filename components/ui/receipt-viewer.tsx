@@ -3,13 +3,7 @@
 import { useState } from "react";
 import { Download, ExternalLink, Paperclip, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 /**
@@ -54,13 +48,9 @@ export function ReceiptViewer({
           setZoomIndex(0);
           setOpen(true);
         }}
-        className={cn(
-          "shrink-0 text-muted-foreground transition-colors hover:text-foreground",
-          className,
-        )}
+        className={cn("shrink-0 text-muted-foreground transition-colors hover:text-foreground", className)}
         aria-label={label ? `View receipt for ${label}` : "View receipt"}
-        title="View receipt"
-      >
+        title="View receipt">
         <Paperclip className="size-4" />
       </button>
 
@@ -68,31 +58,15 @@ export function ReceiptViewer({
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Receipt{label ? ` — ${label}` : ""}</DialogTitle>
-            <DialogDescription>
-              {pdf
-                ? "PDF receipt."
-                : "Pinch or use the zoom buttons to read the slip."}
-            </DialogDescription>
+            <DialogDescription>{pdf ? "PDF receipt." : "Pinch or use the zoom buttons to read the slip."}</DialogDescription>
           </DialogHeader>
 
           <div className="max-h-[65vh] overflow-auto rounded-md border bg-muted/30">
             {pdf ? (
-              <iframe
-                src={url}
-                title="Receipt PDF"
-                className="h-[65vh] w-full"
-              />
+              <iframe src={url} title="Receipt PDF" className="h-[65vh] w-full" />
             ) : (
               <div className="flex min-h-[40vh] items-center justify-center p-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt={
-                    label ? `Receipt for ${label}` : "Receipt for this expense"
-                  }
-                  style={{ transform: `scale(${zoom})` }}
-                  className="max-w-full origin-center transition-transform duration-150"
-                />
+                <img src={url} alt={label ? `Receipt for ${label}` : "Receipt for this expense"} style={{ transform: `scale(${zoom})` }} className="max-w-full origin-center transition-transform duration-150" />
               </div>
             )}
           </div>
@@ -100,27 +74,11 @@ export function ReceiptViewer({
           <div className="flex flex-wrap items-center justify-between gap-2">
             {!pdf ? (
               <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label="Zoom out"
-                  disabled={zoomIndex === 0}
-                  onClick={() => setZoomIndex((i) => Math.max(0, i - 1))}
-                >
+                <Button variant="outline" size="icon" aria-label="Zoom out" disabled={zoomIndex === 0} onClick={() => setZoomIndex((i) => Math.max(0, i - 1))}>
                   <ZoomOut className="size-4" />
                 </Button>
-                <span className="w-12 text-center text-sm tabular-nums text-muted-foreground">
-                  {Math.round(zoom * 100)}%
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label="Zoom in"
-                  disabled={zoomIndex === ZOOM_STEPS.length - 1}
-                  onClick={() =>
-                    setZoomIndex((i) => Math.min(ZOOM_STEPS.length - 1, i + 1))
-                  }
-                >
+                <span className="w-12 text-center text-sm tabular-nums text-muted-foreground">{Math.round(zoom * 100)}%</span>
+                <Button variant="outline" size="icon" aria-label="Zoom in" disabled={zoomIndex === ZOOM_STEPS.length - 1} onClick={() => setZoomIndex((i) => Math.min(ZOOM_STEPS.length - 1, i + 1))}>
                   <ZoomIn className="size-4" />
                 </Button>
               </div>

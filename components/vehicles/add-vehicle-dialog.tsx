@@ -1,35 +1,18 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ComboboxSelect } from "@/components/ui/combobox-select";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUIStore } from "@/stores/ui-store";
 import { addVehicle, type ActionResult } from "@/app/(app)/operations/vehicles/actions";
-import {
-  VEHICLE_STATUSES,
-  VEHICLES_NAMES,
-  VEHICLES_TYPES,
-} from "@/lib/database.types";
+import { VEHICLE_STATUSES } from "@/lib/database.types";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -43,10 +26,7 @@ function SubmitButton() {
 
 export function AddVehicleDialog() {
   const { isAddVehicleOpen, closeAddVehicle } = useUIStore();
-  const [state, formAction] = useActionState<ActionResult, FormData>(
-    addVehicle,
-    {},
-  );
+  const [state, formAction] = useActionState<ActionResult, FormData>(addVehicle, {});
 
   useEffect(() => {
     if (state.success) {
@@ -56,37 +36,22 @@ export function AddVehicleDialog() {
   }, [state, closeAddVehicle]);
 
   return (
-    <Dialog
-      open={isAddVehicleOpen}
-      onOpenChange={(open) => !open && closeAddVehicle()}
-    >
+    <Dialog open={isAddVehicleOpen} onOpenChange={(open) => !open && closeAddVehicle()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add vehicle</DialogTitle>
-          <DialogDescription>
-            Register a vehicle in your fleet.
-          </DialogDescription>
+          <DialogDescription>Register a vehicle in your fleet.</DialogDescription>
         </DialogHeader>
 
         <form action={formAction} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="plate_number">Plate number</Label>
-            <Input
-              id="plate_number"
-              name="plate_number"
-              placeholder="ABC-1234"
-              required
-              autoFocus
-            />
+            <Input id="plate_number" name="plate_number" placeholder="ABC-1234" required autoFocus />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="make_model">Make &amp; model</Label>
-            <Input
-              id="make_model"
-              name="make_model"
-              placeholder="Volvo FH16"
-            />
+            <Input id="make_model" name="make_model" placeholder="Volvo FH16" />
           </div>
 
           <div className="space-y-2">

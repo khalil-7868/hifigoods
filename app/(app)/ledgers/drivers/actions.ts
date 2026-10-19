@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { DriverAdvance } from "@/lib/database.types";
@@ -19,13 +18,9 @@ export interface ActionResult {
  * share a single verification.
  */
 async function requireUser() {
-  const [supabase, user] = await Promise.all([
-    createClient(),
-    requireCurrentUser(),
-  ]);
+  const [supabase, user] = await Promise.all([createClient(), requireCurrentUser()]);
   return { supabase, user };
 }
-
 
 const driverSchema = z.object({
   name: z.string().trim().min(1, "Name is required.").max(80),
@@ -48,10 +43,7 @@ function readDriver(formData: FormData) {
   });
 }
 
-export async function addDriver(
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function addDriver(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = readDriver(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -77,11 +69,7 @@ export async function addDriver(
   return { success: true };
 }
 
-export async function updateDriver(
-  driverId: string,
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function updateDriver(driverId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = readDriver(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -133,11 +121,7 @@ const advanceSchema = z.object({
   notes: z.string().trim().max(500).optional().or(z.literal("")),
 });
 
-export async function addAdvance(
-  driverId: string,
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function addAdvance(driverId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = advanceSchema.safeParse({
     amount_given: formData.get("amount_given") || 0,
     amount_returned: formData.get("amount_returned") || 0,
@@ -155,10 +139,7 @@ export async function addAdvance(
 
   try {
     const { supabase, user } = await requireUser();
-    const routeId =
-      parsed.data.route_id && parsed.data.route_id !== "none"
-        ? parsed.data.route_id
-        : null;
+    const routeId = parsed.data.route_id && parsed.data.route_id !== "none" ? parsed.data.route_id : null;
 
     const { error } = await supabase.from("driver_advances").insert({
       user_id: user.id,
@@ -183,11 +164,7 @@ export async function addAdvance(
  * nothing is left outstanding. Reading the row first (rather than trusting a
  * client-sent total) keeps concurrent returns from overwriting each other.
  */
-export async function returnAdvance(
-  advanceId: string,
-  driverId: string,
-  amount: number,
-): Promise<ActionResult> {
+export async function returnAdvance(advanceId: string, driverId: string, amount: number): Promise<ActionResult> {
   if (!Number.isFinite(amount) || amount <= 0) {
     return { error: "Enter an amount greater than zero." };
   }
@@ -195,11 +172,7 @@ export async function returnAdvance(
   try {
     const { supabase } = await requireUser();
 
-    const { data: row, error: readError } = await supabase
-      .from("driver_advances")
-      .select("amount_given, amount_returned")
-      .eq("id", advanceId)
-      .maybeSingle();
+    const { data: row, error: readError } = await supabase.from("driver_advances").select("amount_given, amount_returned").eq("id", advanceId).maybeSingle();
     if (readError) return { error: readError.message };
     if (!row) return { error: "Advance not found." };
 
@@ -224,17 +197,10 @@ export async function returnAdvance(
 }
 
 /** Marks an advance closed without a matching return — written off. */
-export async function settleAdvance(
-  advanceId: string,
-  driverId: string,
-  settled: boolean,
-): Promise<ActionResult> {
+export async function settleAdvance(advanceId: string, driverId: string, settled: boolean): Promise<ActionResult> {
   try {
     const { supabase } = await requireUser();
-    const { error } = await supabase
-      .from("driver_advances")
-      .update({ settled })
-      .eq("id", advanceId);
+    const { error } = await supabase.from("driver_advances").update({ settled }).eq("id", advanceId);
     if (error) return { error: error.message };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Something went wrong." };
@@ -244,19 +210,11 @@ export async function settleAdvance(
 }
 
 /** Deletes an advance and hands the row back so the client can offer Undo. */
-export async function deleteAdvance(
-  advanceId: string,
-  driverId: string,
-): Promise<ActionResult & { restore?: DriverAdvance }> {
+export async function deleteAdvance(advanceId: string, driverId: string): Promise<ActionResult & { restore?: DriverAdvance }> {
   let restore: DriverAdvance | undefined;
   try {
     const { supabase } = await requireUser();
-    const { data, error } = await supabase
-      .from("driver_advances")
-      .delete()
-      .eq("id", advanceId)
-      .select()
-      .maybeSingle();
+    const { data, error } = await supabase.from("driver_advances").delete().eq("id", advanceId).select().maybeSingle();
     if (error) return { error: error.message };
     restore = data ?? undefined;
   } catch (e) {
@@ -267,10 +225,7 @@ export async function deleteAdvance(
 }
 
 /** Re-inserts a row removed by deleteAdvance. */
-export async function restoreAdvance(
-  row: DriverAdvance,
-  driverId: string,
-): Promise<ActionResult> {
+export async function restoreAdvance(row: DriverAdvance, driverId: string): Promise<ActionResult> {
   try {
     const { supabase, user } = await requireUser();
     const { error } = await supabase.from("driver_advances").insert({

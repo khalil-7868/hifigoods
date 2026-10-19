@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { VEHICLE_STATUSES } from "@/lib/database.types";
@@ -13,15 +12,9 @@ export interface ActionResult {
 }
 
 const vehicleSchema = z.object({
-  plate_number: z
-    .string()
-    .trim()
-    .min(2, "Plate number is required.")
-    .max(20, "Plate number is too long."),
+  plate_number: z.string().trim().min(2, "Plate number is required.").max(20, "Plate number is too long."),
   make_model: z.string().trim().max(80).optional().or(z.literal("")),
-  status: z.enum(
-    VEHICLE_STATUSES as unknown as [string, ...string[]],
-  ),
+  status: z.enum(VEHICLE_STATUSES as unknown as [string, ...string[]]),
 });
 
 /**
@@ -31,17 +24,11 @@ const vehicleSchema = z.object({
  * share a single verification.
  */
 async function requireUser() {
-  const [supabase, user] = await Promise.all([
-    createClient(),
-    requireCurrentUser(),
-  ]);
+  const [supabase, user] = await Promise.all([createClient(), requireCurrentUser()]);
   return { supabase, user };
 }
 
-export async function addVehicle(
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function addVehicle(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = vehicleSchema.safeParse({
     plate_number: formData.get("plate_number"),
     make_model: formData.get("make_model"),
@@ -81,10 +68,7 @@ export async function removeVehicle(vehicleId: string): Promise<ActionResult> {
   try {
     const { supabase } = await requireUser();
     // RLS ensures a user can only delete their own vehicle.
-    const { error } = await supabase
-      .from("vehicles")
-      .delete()
-      .eq("id", vehicleId);
+    const { error } = await supabase.from("vehicles").delete().eq("id", vehicleId);
     if (error) return { error: error.message };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Something went wrong." };

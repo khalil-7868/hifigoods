@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { BrokerPayment } from "@/lib/database.types";
@@ -19,13 +18,9 @@ export interface ActionResult {
  * share a single verification.
  */
 async function requireUser() {
-  const [supabase, user] = await Promise.all([
-    createClient(),
-    requireCurrentUser(),
-  ]);
+  const [supabase, user] = await Promise.all([createClient(), requireCurrentUser()]);
   return { supabase, user };
 }
-
 
 const brokerSchema = z.object({
   name: z.string().trim().min(1, "Name is required.").max(80),
@@ -43,10 +38,7 @@ function parseBroker(formData: FormData) {
   });
 }
 
-export async function addBroker(
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function addBroker(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = parseBroker(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -75,11 +67,7 @@ export async function addBroker(
   return { success: true };
 }
 
-export async function updateBroker(
-  brokerId: string,
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function updateBroker(brokerId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = parseBroker(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -128,11 +116,7 @@ const paymentSchema = z.object({
 });
 
 /** Record rent the broker has handed over. Allocated to legs oldest-first. */
-export async function addBrokerPayment(
-  brokerId: string,
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function addBrokerPayment(brokerId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = paymentSchema.safeParse({
     amount: formData.get("amount"),
     date: formData.get("date"),
@@ -163,19 +147,11 @@ export async function addBrokerPayment(
 }
 
 /** Deletes a settlement and returns the row so the client can offer Undo. */
-export async function deleteBrokerPayment(
-  paymentId: string,
-  brokerId: string,
-): Promise<ActionResult & { restore?: BrokerPayment }> {
+export async function deleteBrokerPayment(paymentId: string, brokerId: string): Promise<ActionResult & { restore?: BrokerPayment }> {
   let restore: BrokerPayment | undefined;
   try {
     const { supabase } = await requireUser();
-    const { data, error } = await supabase
-      .from("broker_payments")
-      .delete()
-      .eq("id", paymentId)
-      .select()
-      .maybeSingle();
+    const { data, error } = await supabase.from("broker_payments").delete().eq("id", paymentId).select().maybeSingle();
     if (error) return { error: error.message };
     restore = data ?? undefined;
   } catch (e) {
@@ -186,10 +162,7 @@ export async function deleteBrokerPayment(
 }
 
 /** Re-inserts a row removed by deleteBrokerPayment. */
-export async function restoreBrokerPayment(
-  row: BrokerPayment,
-  brokerId: string,
-): Promise<ActionResult> {
+export async function restoreBrokerPayment(row: BrokerPayment, brokerId: string): Promise<ActionResult> {
   try {
     const { supabase, user } = await requireUser();
     const { error } = await supabase.from("broker_payments").insert({

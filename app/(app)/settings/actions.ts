@@ -1,16 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/database.types";
-import {
-  AVATARS_BUCKET,
-  AVATAR_MAX_BYTES,
-  avatarPath,
-  isAllowedAvatarType,
-} from "@/lib/storage";
+import { AVATARS_BUCKET, AVATAR_MAX_BYTES, avatarPath, isAllowedAvatarType } from "@/lib/storage";
 import { requireCurrentUser } from "@/lib/supabase/auth";
 import { revalidateFor, revalidateLayout } from "@/lib/revalidate";
 
@@ -31,10 +25,7 @@ type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
  * share a single verification.
  */
 async function requireUser() {
-  const [supabase, user] = await Promise.all([
-    createClient(),
-    requireCurrentUser(),
-  ]);
+  const [supabase, user] = await Promise.all([createClient(), requireCurrentUser()]);
   return { supabase, user };
 }
 
@@ -42,13 +33,9 @@ type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
 
 /** Delete every file currently stored under the user's avatar folder. */
 async function clearAvatarFolder(supabase: SupabaseServer, userId: string) {
-  const { data: existing } = await supabase.storage
-    .from(AVATARS_BUCKET)
-    .list(userId);
+  const { data: existing } = await supabase.storage.from(AVATARS_BUCKET).list(userId);
   if (existing && existing.length > 0) {
-    await supabase.storage
-      .from(AVATARS_BUCKET)
-      .remove(existing.map((f) => `${userId}/${f.name}`));
+    await supabase.storage.from(AVATARS_BUCKET).remove(existing.map((f) => `${userId}/${f.name}`));
   }
 }
 
@@ -59,10 +46,7 @@ const profileSchema = z.object({
   company: z.string().trim().max(80).optional().or(z.literal("")),
 });
 
-export async function updateProfile(
-  _prev: SettingsResult,
-  formData: FormData,
-): Promise<SettingsResult> {
+export async function updateProfile(_prev: SettingsResult, formData: FormData): Promise<SettingsResult> {
   const parsed = profileSchema.safeParse({
     full_name: formData.get("full_name"),
     company: formData.get("company"),
@@ -93,16 +77,12 @@ export async function updateProfile(
       await clearAvatarFolder(supabase, user.id);
 
       const path = avatarPath(user.id, file.name);
-      const { error: uploadError } = await supabase.storage
-        .from(AVATARS_BUCKET)
-        .upload(path, file, { contentType: file.type, upsert: true });
+      const { error: uploadError } = await supabase.storage.from(AVATARS_BUCKET).upload(path, file, { contentType: file.type, upsert: true });
 
       if (uploadError) {
         const missingBucket = /bucket.*not.*found/i.test(uploadError.message);
         return {
-          error: missingBucket
-            ? "The 'avatars' storage bucket is missing. Run supabase/migration_02.sql in the Supabase SQL editor."
-            : `Upload failed: ${uploadError.message}`,
+          error: missingBucket ? "The 'avatars' storage bucket is missing. Run supabase/migration_02.sql in the Supabase SQL editor." : `Upload failed: ${uploadError.message}`,
         };
       }
 
@@ -122,17 +102,12 @@ export async function updateProfile(
     };
     if (newAvatarUrl !== undefined) payload.avatar_url = newAvatarUrl;
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .upsert(payload, { onConflict: "id" })
-      .select("id")
-      .maybeSingle();
+    const { data, error } = await supabase.from("profiles").upsert(payload, { onConflict: "id" }).select("id").maybeSingle();
 
     if (error) return { error: error.message };
     if (!data) {
       return {
-        error:
-          "Profile could not be saved. Check that row-level security allows updating your own profile.",
+        error: "Profile could not be saved. Check that row-level security allows updating your own profile.",
       };
     }
   } catch (e) {
@@ -160,10 +135,7 @@ const passwordSchema = z
     path: ["confirm"],
   });
 
-export async function changePassword(
-  _prev: SettingsResult,
-  formData: FormData,
-): Promise<SettingsResult> {
+export async function changePassword(_prev: SettingsResult, formData: FormData): Promise<SettingsResult> {
   const parsed = passwordSchema.safeParse({
     password: formData.get("password"),
     confirm: formData.get("confirm"),
@@ -207,13 +179,9 @@ export async function deleteAccount(): Promise<SettingsResult> {
     // Security-definer RPC deletes auth.users; cascades remove all app data.
     const { error } = await supabase.rpc("delete_current_user");
     if (error) {
-      const missingFn = /function.*does not exist|could not find/i.test(
-        error.message,
-      );
+      const missingFn = /function.*does not exist|could not find/i.test(error.message);
       return {
-        error: missingFn
-          ? "Account deletion isn't set up yet. Run supabase/migration_02.sql in the Supabase SQL editor."
-          : error.message,
+        error: missingFn ? "Account deletion isn't set up yet. Run supabase/migration_02.sql in the Supabase SQL editor." : error.message,
       };
     }
     await supabase.auth.signOut();

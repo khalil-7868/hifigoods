@@ -1,26 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
+
 import { ArrowLeft, Loader2, Plus, Printer, Trash2, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PaymentDialog } from "@/components/parties/payment-dialog";
 import { TallyCalculator } from "@/components/parties/tally-calculator";
 import { deletePayment, restorePayment } from "@/app/(app)/ledgers/parties/actions";
@@ -30,29 +17,11 @@ import { cn } from "@/lib/utils";
 import type { PartyDetail } from "@/lib/parties-data";
 import { PATHS } from "@/lib/routes";
 
-function Metric({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: "profit" | "expense";
-}) {
+function Metric({ label, value, tone }: { label: string; value: string; tone?: "profit" | "expense" }) {
   return (
     <div className="rounded-lg border p-4">
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
-      <p
-        className={cn(
-          "mt-1 text-xl font-semibold tabular-nums sm:text-2xl",
-          tone === "profit" && "text-profit",
-          tone === "expense" && "text-expense",
-        )}
-      >
-        {value}
-      </p>
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={cn("mt-1 text-xl font-semibold tabular-nums sm:text-2xl", tone === "profit" && "text-profit", tone === "expense" && "text-expense")}>{value}</p>
     </div>
   );
 }
@@ -65,10 +34,7 @@ export function PartyLedger({ detail }: { detail: PartyDetail }) {
   const { remove, isPending: isDeleting } = useUndoableDelete({
     onDelete: (id: string) => deletePayment(id, party.id),
     onRestore: (row) => restorePayment(row, party.id),
-    deletedMessage: (row) =>
-      row
-        ? `Payment of ${formatCurrency(Number(row.amount))} removed.`
-        : "Payment removed.",
+    deletedMessage: (row) => (row ? `Payment of ${formatCurrency(Number(row.amount))} removed.` : "Payment removed."),
     restoredMessage: "Payment restored.",
   });
 
@@ -84,13 +50,8 @@ export function PartyLedger({ detail }: { detail: PartyDetail }) {
 
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {party.name}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {[party.city, party.phone].filter(Boolean).join(" · ") ||
-                "No contact details"}
-            </p>
+            <h1 className="text-2xl font-semibold tracking-tight">{party.name}</h1>
+            <p className="text-sm text-muted-foreground">{[party.city, party.phone].filter(Boolean).join(" · ") || "No contact details"}</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => window.print()}>
@@ -114,44 +75,24 @@ export function PartyLedger({ detail }: { detail: PartyDetail }) {
             </div>
             <span className="text-sm">{formatDate(new Date())}</span>
           </div>
-          <h1 className="mt-3 text-xl font-semibold">
-            Statement — {party.name}
-          </h1>
+          <h1 className="mt-3 text-xl font-semibold">Statement — {party.name}</h1>
         </div>
 
-        <section
-          aria-label="Party balance"
-          className="grid grid-cols-2 gap-3 lg:grid-cols-4"
-        >
-          <Metric
-            label="Opening"
-            value={formatCurrency(Number(party.opening_balance))}
-          />
+        <section aria-label="Party balance" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Metric label="Opening" value={formatCurrency(Number(party.opening_balance))} />
           <Metric label="Billed" value={formatCurrency(party.billed)} />
-          <Metric
-            label="Received"
-            value={formatCurrency(party.received)}
-            tone="profit"
-          />
-          <Metric
-            label="Outstanding"
-            value={formatCurrency(party.balance)}
-            tone={party.balance > 0 ? "expense" : "profit"}
-          />
+          <Metric label="Received" value={formatCurrency(party.received)} tone="profit" />
+          <Metric label="Outstanding" value={formatCurrency(party.balance)} tone={party.balance > 0 ? "expense" : "profit"} />
         </section>
 
         <Card>
           <CardHeader>
             <CardTitle>Statement</CardTitle>
-            <CardDescription>
-              Every bill and payment in date order, with a running balance.
-            </CardDescription>
+            <CardDescription>Every bill and payment in date order, with a running balance.</CardDescription>
           </CardHeader>
           <CardContent>
             {entries.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                Nothing yet. Assign a route to this party, or record a payment.
-              </p>
+              <p className="py-8 text-center text-sm text-muted-foreground">Nothing yet. Assign a route to this party, or record a payment.</p>
             ) : (
               <Table>
                 <TableHeader>
@@ -167,40 +108,20 @@ export function PartyLedger({ detail }: { detail: PartyDetail }) {
                 <TableBody>
                   {entries.map((e) => (
                     <TableRow key={`${e.kind}-${e.id}`} className="print-keep-together">
-                      <TableCell className="whitespace-nowrap text-muted-foreground">
-                        {formatDate(e.date)}
-                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-muted-foreground">{formatDate(e.date)}</TableCell>
                       <TableCell>
                         {e.routeId ? (
-                          <Link
-                            href={PATHS.route(e.routeId)}
-                            className="font-medium hover:underline"
-                          >
+                          <Link href={PATHS.route(e.routeId)} className="font-medium hover:underline">
                             {e.description}
                           </Link>
                         ) : (
                           <span className="font-medium">{e.description}</span>
                         )}
-                        {e.notes && (
-                          <span className="block text-xs text-muted-foreground">
-                            {e.notes}
-                          </span>
-                        )}
+                        {e.notes && <span className="block text-xs text-muted-foreground">{e.notes}</span>}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {e.debit ? formatCurrency(e.debit) : "—"}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums text-profit">
-                        {e.credit ? formatCurrency(e.credit) : "—"}
-                      </TableCell>
-                      <TableCell
-                        className={cn(
-                          "text-right font-medium tabular-nums",
-                          e.balance > 0 ? "text-expense" : "text-profit",
-                        )}
-                      >
-                        {formatCurrency(e.balance)}
-                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{e.debit ? formatCurrency(e.debit) : "—"}</TableCell>
+                      <TableCell className="text-right tabular-nums text-profit">{e.credit ? formatCurrency(e.credit) : "—"}</TableCell>
+                      <TableCell className={cn("text-right font-medium tabular-nums", e.balance > 0 ? "text-expense" : "text-profit")}>{formatCurrency(e.balance)}</TableCell>
                       <TableCell className="text-right no-print">
                         {e.kind === "payment" && (
                           <Button
@@ -212,13 +133,8 @@ export function PartyLedger({ detail }: { detail: PartyDetail }) {
                               setDeletingId(e.id);
                               remove(e.id);
                             }}
-                            disabled={isDeleting && deletingId === e.id}
-                          >
-                            {isDeleting && deletingId === e.id ? (
-                              <Loader2 className="size-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="size-4" />
-                            )}
+                            disabled={isDeleting && deletingId === e.id}>
+                            {isDeleting && deletingId === e.id ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
                           </Button>
                         )}
                       </TableCell>
@@ -239,22 +155,14 @@ export function PartyLedger({ detail }: { detail: PartyDetail }) {
               Scratch pad
             </Badge>
           </CardTitle>
-          <CardDescription>
-            Add up cash or invoices without leaving the page.
-          </CardDescription>
+          <CardDescription>Add up cash or invoices without leaving the page.</CardDescription>
         </CardHeader>
         <CardContent>
           <TallyCalculator className="max-w-sm" />
         </CardContent>
       </Card>
 
-      <PaymentDialog
-        open={payOpen}
-        onOpenChange={setPayOpen}
-        partyId={party.id}
-        outstanding={party.balance}
-      />
-
+      <PaymentDialog open={payOpen} onOpenChange={setPayOpen} partyId={party.id} outstanding={party.balance} />
     </div>
   );
 }

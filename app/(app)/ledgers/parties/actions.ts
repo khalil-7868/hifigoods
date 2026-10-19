@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { PartyPayment } from "@/lib/database.types";
@@ -19,13 +18,9 @@ export interface ActionResult {
  * share a single verification.
  */
 async function requireUser() {
-  const [supabase, user] = await Promise.all([
-    createClient(),
-    requireCurrentUser(),
-  ]);
+  const [supabase, user] = await Promise.all([createClient(), requireCurrentUser()]);
   return { supabase, user };
 }
-
 
 const partySchema = z.object({
   name: z.string().trim().min(1, "Name is required.").max(80),
@@ -35,10 +30,7 @@ const partySchema = z.object({
   notes: z.string().trim().max(500).optional().or(z.literal("")),
 });
 
-export async function addParty(
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function addParty(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = partySchema.safeParse({
     name: formData.get("name"),
     phone: formData.get("phone"),
@@ -74,11 +66,7 @@ export async function addParty(
   return { success: true };
 }
 
-export async function updateParty(
-  partyId: string,
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function updateParty(partyId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = partySchema.safeParse({
     name: formData.get("name"),
     phone: formData.get("phone"),
@@ -133,11 +121,7 @@ const paymentSchema = z.object({
   notes: z.string().trim().max(300).optional().or(z.literal("")),
 });
 
-export async function addPayment(
-  partyId: string,
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function addPayment(partyId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = paymentSchema.safeParse({
     amount: formData.get("amount"),
     date: formData.get("date"),
@@ -168,19 +152,11 @@ export async function addPayment(
 }
 
 /** Deletes a payment and returns the row so the client can offer Undo. */
-export async function deletePayment(
-  paymentId: string,
-  partyId: string,
-): Promise<ActionResult & { restore?: PartyPayment }> {
+export async function deletePayment(paymentId: string, partyId: string): Promise<ActionResult & { restore?: PartyPayment }> {
   let restore: PartyPayment | undefined;
   try {
     const { supabase } = await requireUser();
-    const { data, error } = await supabase
-      .from("party_payments")
-      .delete()
-      .eq("id", paymentId)
-      .select()
-      .maybeSingle();
+    const { data, error } = await supabase.from("party_payments").delete().eq("id", paymentId).select().maybeSingle();
     if (error) return { error: error.message };
     restore = data ?? undefined;
   } catch (e) {
@@ -191,10 +167,7 @@ export async function deletePayment(
 }
 
 /** Re-inserts a row removed by deletePayment. */
-export async function restorePayment(
-  row: PartyPayment,
-  partyId: string,
-): Promise<ActionResult> {
+export async function restorePayment(row: PartyPayment, partyId: string): Promise<ActionResult> {
   try {
     const { supabase, user } = await requireUser();
     const { error } = await supabase.from("party_payments").insert({

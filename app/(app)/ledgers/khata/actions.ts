@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { KhataEntry } from "@/lib/database.types";
@@ -19,13 +18,9 @@ export interface ActionResult {
  * share a single verification.
  */
 async function requireUser() {
-  const [supabase, user] = await Promise.all([
-    createClient(),
-    requireCurrentUser(),
-  ]);
+  const [supabase, user] = await Promise.all([createClient(), requireCurrentUser()]);
   return { supabase, user };
 }
-
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Name is required.").max(80),
@@ -43,10 +38,7 @@ function parseContact(formData: FormData) {
   });
 }
 
-export async function addKhataContact(
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function addKhataContact(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = parseContact(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -75,11 +67,7 @@ export async function addKhataContact(
   return { success: true };
 }
 
-export async function updateKhataContact(
-  contactId: string,
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function updateKhataContact(contactId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = parseContact(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -105,15 +93,10 @@ export async function updateKhataContact(
   return { success: true };
 }
 
-export async function deleteKhataContact(
-  contactId: string,
-): Promise<ActionResult> {
+export async function deleteKhataContact(contactId: string): Promise<ActionResult> {
   try {
     const { supabase } = await requireUser();
-    const { error } = await supabase
-      .from("khata_contacts")
-      .delete()
-      .eq("id", contactId);
+    const { error } = await supabase.from("khata_contacts").delete().eq("id", contactId);
     if (error) return { error: error.message };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Something went wrong." };
@@ -131,11 +114,7 @@ const entrySchema = z.object({
   notes: z.string().trim().max(300).optional().or(z.literal("")),
 });
 
-export async function addKhataEntry(
-  contactId: string,
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function addKhataEntry(contactId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = entrySchema.safeParse({
     direction: formData.get("direction"),
     amount: formData.get("amount"),
@@ -170,19 +149,11 @@ export async function addKhataEntry(
  * Cheaper and less error-prone than a soft-delete column: the row really is
  * gone, and restore re-inserts it verbatim under the same id.
  */
-export async function deleteKhataEntry(
-  entryId: string,
-  contactId: string,
-): Promise<ActionResult & { restore?: KhataEntry }> {
+export async function deleteKhataEntry(entryId: string, contactId: string): Promise<ActionResult & { restore?: KhataEntry }> {
   let restore: KhataEntry | undefined;
   try {
     const { supabase } = await requireUser();
-    const { data, error } = await supabase
-      .from("khata_entries")
-      .delete()
-      .eq("id", entryId)
-      .select()
-      .maybeSingle();
+    const { data, error } = await supabase.from("khata_entries").delete().eq("id", entryId).select().maybeSingle();
     if (error) return { error: error.message };
     restore = data ?? undefined;
   } catch (e) {
@@ -193,10 +164,7 @@ export async function deleteKhataEntry(
 }
 
 /** Re-inserts a row removed by deleteKhataEntry. */
-export async function restoreKhataEntry(
-  row: KhataEntry,
-  contactId: string,
-): Promise<ActionResult> {
+export async function restoreKhataEntry(row: KhataEntry, contactId: string): Promise<ActionResult> {
   try {
     const { supabase, user } = await requireUser();
     const { error } = await supabase.from("khata_entries").insert({

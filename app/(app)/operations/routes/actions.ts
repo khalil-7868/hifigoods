@@ -1,14 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import {
-  RECEIPTS_BUCKET,
-  RECEIPT_MAX_BYTES,
-  isAllowedReceiptType,
-  receiptPath,
-} from "@/lib/storage";
+import { RECEIPTS_BUCKET, RECEIPT_MAX_BYTES, isAllowedReceiptType, receiptPath } from "@/lib/storage";
 import type { Expense, TablesUpdate } from "@/lib/database.types";
 import { requireCurrentUser } from "@/lib/supabase/auth";
 import { revalidateFor } from "@/lib/revalidate";
@@ -25,13 +19,9 @@ export interface ActionResult {
  * share a single verification.
  */
 async function requireUser() {
-  const [supabase, user] = await Promise.all([
-    createClient(),
-    requireCurrentUser(),
-  ]);
+  const [supabase, user] = await Promise.all([createClient(), requireCurrentUser()]);
   return { supabase, user };
 }
-
 
 /* ------------------------------------------------------------------ Routes */
 
@@ -44,15 +34,9 @@ const routeSchema = z
     start_date: z.string().min(1, "Start date is required."),
     end_date: z.string().optional().or(z.literal("")),
   })
-  .refine(
-    (v) => !v.end_date || v.end_date >= v.start_date,
-    { message: "End date must be on or after the start date.", path: ["end_date"] },
-  );
+  .refine((v) => !v.end_date || v.end_date >= v.start_date, { message: "End date must be on or after the start date.", path: ["end_date"] });
 
-export async function addRoute(
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function addRoute(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = routeSchema.safeParse({
     vehicle_id: formData.get("vehicle_id"),
     origin: formData.get("origin"),
@@ -88,11 +72,7 @@ export async function addRoute(
   return { success: true };
 }
 
-export async function updateRoute(
-  routeId: string,
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function updateRoute(routeId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = routeSchema.safeParse({
     vehicle_id: formData.get("vehicle_id"),
     origin: formData.get("origin"),
@@ -136,10 +116,7 @@ export async function deleteRoute(routeId: string): Promise<ActionResult> {
     const { supabase, user } = await requireUser();
 
     // Legs cascade-delete in the DB, so clear their receipts too.
-    const { data: legs } = await supabase
-      .from("routes")
-      .select("id")
-      .eq("parent_route_id", routeId);
+    const { data: legs } = await supabase.from("routes").select("id").eq("parent_route_id", routeId);
 
     for (const leg of legs ?? []) {
       await removeReceiptFolder(supabase, user.id, leg.id);
@@ -166,10 +143,7 @@ function optionalId(raw: FormDataEntryValue | null): string | null {
 /** Broker + commission fields shared by the route and leg forms. */
 const brokerFields = {
   broker_id: z.string().uuid().optional().or(z.literal("")).or(z.null()),
-  broker_commission_type: z
-    .enum(["fixed", "percent"])
-    .optional()
-    .or(z.literal("")),
+  broker_commission_type: z.enum(["fixed", "percent"]).optional().or(z.literal("")),
   broker_commission_value: z.coerce.number().min(0).optional(),
 };
 
@@ -178,22 +152,15 @@ function parseBrokerFields(formData: FormData) {
   const rawType = formData.get("broker_commission_type");
   const rawValue = formData.get("broker_commission_value");
 
-  const broker_id =
-    rawId && String(rawId) !== "none" ? String(rawId) : null;
-  const broker_commission_type = broker_id
-    ? ((String(rawType ?? "fixed") || "fixed") as "fixed" | "percent")
-    : null;
+  const broker_id = rawId && String(rawId) !== "none" ? String(rawId) : null;
+  const broker_commission_type = broker_id ? ((String(rawType ?? "fixed") || "fixed") as "fixed" | "percent") : null;
   const broker_commission_value = broker_id ? Number(rawValue ?? 0) || 0 : 0;
 
   return { broker_id, broker_commission_type, broker_commission_value };
 }
 
 /** Optional cargo details shared by add/update leg. Blank strings -> null. */
-function legDetailFields(data: {
-  material?: string;
-  weight?: string;
-  notes?: string;
-}) {
+function legDetailFields(data: { material?: string; weight?: string; notes?: string }) {
   return {
     material: data.material?.trim() || null,
     weight: data.weight?.trim() ? Number(data.weight) : null,
@@ -217,11 +184,7 @@ const subRouteSchema = z.object({
  * date; its `revenue` is the leg's rent. The main route's rent is the sum of
  * its legs (computed when reading, see lib/routes-data.ts).
  */
-export async function addSubRoute(
-  parentId: string,
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function addSubRoute(parentId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   if (!parentId) return { error: "Missing route id." };
 
   const parsed = subRouteSchema.safeParse({
@@ -239,11 +202,7 @@ export async function addSubRoute(
   try {
     const { supabase, user } = await requireUser();
 
-    const { data: parent, error: parentError } = await supabase
-      .from("routes")
-      .select("vehicle_id, start_date, parent_route_id")
-      .eq("id", parentId)
-      .maybeSingle();
+    const { data: parent, error: parentError } = await supabase.from("routes").select("vehicle_id, start_date, parent_route_id").eq("id", parentId).maybeSingle();
     if (parentError) return { error: parentError.message };
     if (!parent) return { error: "Main route not found." };
     if (parent.parent_route_id) {
@@ -271,11 +230,7 @@ export async function addSubRoute(
 }
 
 /** Update a leg's origin, destination, or rent. */
-export async function updateSubRoute(
-  legId: string,
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function updateSubRoute(legId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = subRouteSchema.safeParse({
     origin: formData.get("origin"),
     destination: formData.get("destination"),
@@ -290,11 +245,7 @@ export async function updateSubRoute(
 
   try {
     const { supabase } = await requireUser();
-    const { data: leg } = await supabase
-      .from("routes")
-      .select("parent_route_id")
-      .eq("id", legId)
-      .maybeSingle();
+    const { data: leg } = await supabase.from("routes").select("parent_route_id").eq("id", legId).maybeSingle();
 
     const { error } = await supabase
       .from("routes")
@@ -321,11 +272,7 @@ export async function updateSubRoute(
 const expenseSchema = z.object({
   route_id: z.string().uuid(),
   // Free text: a preset like "Fuel" or a custom label like "Lunch".
-  category: z
-    .string()
-    .trim()
-    .min(1, "Category is required.")
-    .max(40, "Category is too long."),
+  category: z.string().trim().min(1, "Category is required.").max(40, "Category is too long."),
   amount: z.coerce.number().min(0, "Amount cannot be negative."),
   notes: z.string().trim().max(500).optional().or(z.literal("")),
   // Date is no longer entered in the UI; the DB defaults it to current_date.
@@ -335,12 +282,7 @@ const expenseSchema = z.object({
 type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
 
 /** Upload a receipt file if present and valid; returns its storage path. */
-async function maybeUploadReceipt(
-  supabase: SupabaseServer,
-  userId: string,
-  routeId: string,
-  file: File | null,
-): Promise<{ path: string | null; error?: string }> {
+async function maybeUploadReceipt(supabase: SupabaseServer, userId: string, routeId: string, file: File | null): Promise<{ path: string | null; error?: string }> {
   if (!file || file.size === 0) return { path: null };
   if (file.size > RECEIPT_MAX_BYTES) {
     return { path: null, error: "Receipt must be 10 MB or smaller." };
@@ -349,39 +291,25 @@ async function maybeUploadReceipt(
     return { path: null, error: "Receipt must be a PNG, JPG, WEBP, or PDF." };
   }
   const path = receiptPath(userId, routeId, file.name);
-  const { error } = await supabase.storage
-    .from(RECEIPTS_BUCKET)
-    .upload(path, file, { contentType: file.type, upsert: false });
+  const { error } = await supabase.storage.from(RECEIPTS_BUCKET).upload(path, file, { contentType: file.type, upsert: false });
   if (error) return { path: null, error: error.message };
   return { path };
 }
 
-async function removeReceipt(
-  supabase: SupabaseServer,
-  path: string | null | undefined,
-) {
+async function removeReceipt(supabase: SupabaseServer, path: string | null | undefined) {
   if (!path) return;
   await supabase.storage.from(RECEIPTS_BUCKET).remove([path]);
 }
 
-async function removeReceiptFolder(
-  supabase: SupabaseServer,
-  userId: string,
-  routeId: string,
-) {
+async function removeReceiptFolder(supabase: SupabaseServer, userId: string, routeId: string) {
   const prefix = `${userId}/${routeId}`;
   const { data } = await supabase.storage.from(RECEIPTS_BUCKET).list(prefix);
   if (data && data.length > 0) {
-    await supabase.storage
-      .from(RECEIPTS_BUCKET)
-      .remove(data.map((f) => `${prefix}/${f.name}`));
+    await supabase.storage.from(RECEIPTS_BUCKET).remove(data.map((f) => `${prefix}/${f.name}`));
   }
 }
 
-export async function addExpense(
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function addExpense(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = expenseSchema.safeParse({
     route_id: formData.get("route_id"),
     category: formData.get("category"),
@@ -396,12 +324,7 @@ export async function addExpense(
   try {
     const { supabase, user } = await requireUser();
     const file = formData.get("receipt") as File | null;
-    const uploaded = await maybeUploadReceipt(
-      supabase,
-      user.id,
-      parsed.data.route_id,
-      file,
-    );
+    const uploaded = await maybeUploadReceipt(supabase, user.id, parsed.data.route_id, file);
     if (uploaded.error) return { error: uploaded.error };
 
     const { error } = await supabase.from("expenses").insert({
@@ -430,11 +353,7 @@ export async function addExpense(
  * as indexed FormData fields (amount-<i>, category-<i>, date-<i>, notes-<i>,
  * receipt-<i>). Empty rows (no amount) are skipped.
  */
-export async function addExpenses(
-  routeId: string,
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function addExpenses(routeId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   if (!routeId) return { error: "Missing route id." };
 
   const count = Number(formData.get("count") ?? 0);
@@ -484,12 +403,7 @@ export async function addExpenses(
     // Upload any receipts first, tracking paths for rollback on failure.
     const inserts = [];
     for (const row of rows) {
-      const uploaded = await maybeUploadReceipt(
-        supabase,
-        user.id,
-        routeId,
-        row.file,
-      );
+      const uploaded = await maybeUploadReceipt(supabase, user.id, routeId, row.file);
       if (uploaded.error) {
         await Promise.all(uploadedPaths.map((p) => removeReceipt(supabase, p)));
         return { error: uploaded.error };
@@ -538,11 +452,7 @@ const dieselRowSchema = z.object({
  * slip-<i>, pump-<i>, date-<i>, rate-<i>, qty-<i>, amount-<i>, receipt-<i>.
  * Rows with no quantity AND no amount are skipped.
  */
-export async function addDieselEntries(
-  routeId: string,
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function addDieselEntries(routeId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   if (!routeId) return { error: "Missing route id." };
 
   const count = Number(formData.get("count") ?? 0);
@@ -591,12 +501,7 @@ export async function addDieselEntries(
     const inserts = [];
 
     for (const row of rows) {
-      const uploaded = await maybeUploadReceipt(
-        supabase,
-        user.id,
-        routeId,
-        row.file,
-      );
+      const uploaded = await maybeUploadReceipt(supabase, user.id, routeId, row.file);
       if (uploaded.error) {
         await Promise.all(uploadedPaths.map((p) => removeReceipt(supabase, p)));
         return { error: uploaded.error };
@@ -631,11 +536,7 @@ export async function addDieselEntries(
   return { success: true };
 }
 
-export async function updateExpense(
-  expenseId: string,
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function updateExpense(expenseId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = expenseSchema.safeParse({
     route_id: formData.get("route_id"),
     category: formData.get("category"),
@@ -675,28 +576,16 @@ export async function updateExpense(
     // Optional receipt replacement.
     const file = formData.get("receipt") as File | null;
     if (file && file.size > 0) {
-      const uploaded = await maybeUploadReceipt(
-        supabase,
-        user.id,
-        parsed.data.route_id,
-        file,
-      );
+      const uploaded = await maybeUploadReceipt(supabase, user.id, parsed.data.route_id, file);
       if (uploaded.error) return { error: uploaded.error };
 
-      const { data: existing } = await supabase
-        .from("expenses")
-        .select("receipt_url")
-        .eq("id", expenseId)
-        .maybeSingle();
+      const { data: existing } = await supabase.from("expenses").select("receipt_url").eq("id", expenseId).maybeSingle();
 
       update.receipt_url = uploaded.path;
       await removeReceipt(supabase, existing?.receipt_url ?? null);
     }
 
-    const { error } = await supabase
-      .from("expenses")
-      .update(update)
-      .eq("id", expenseId);
+    const { error } = await supabase.from("expenses").update(update).eq("id", expenseId);
     if (error) return { error: error.message };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Something went wrong." };
@@ -718,20 +607,13 @@ export async function updateExpense(
  * Follow-up: a scheduled job (or a storage trigger) should sweep objects under
  * `receipts/` with no matching expenses row. Tracked in IMPLEMENTATION.md.
  */
-export async function deleteExpense(
-  expenseId: string,
-): Promise<ActionResult & { restore?: Expense }> {
+export async function deleteExpense(expenseId: string): Promise<ActionResult & { restore?: Expense }> {
   if (!expenseId) return { error: "Missing expense id." };
   let restore: Expense | undefined;
   try {
     const { supabase } = await requireUser();
 
-    const { data, error } = await supabase
-      .from("expenses")
-      .delete()
-      .eq("id", expenseId)
-      .select()
-      .maybeSingle();
+    const { data, error } = await supabase.from("expenses").delete().eq("id", expenseId).select().maybeSingle();
     if (error) return { error: error.message };
 
     restore = data ?? undefined;

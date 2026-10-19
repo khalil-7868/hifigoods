@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { requireCurrentUser } from "@/lib/supabase/auth";
@@ -18,28 +17,18 @@ export interface ActionResult {
  * share a single verification.
  */
 async function requireUser() {
-  const [supabase, user] = await Promise.all([
-    createClient(),
-    requireCurrentUser(),
-  ]);
+  const [supabase, user] = await Promise.all([createClient(), requireCurrentUser()]);
   return { supabase, user };
 }
 
-
-const monthSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-01$/, "Pick a valid month.");
+const monthSchema = z.string().regex(/^\d{4}-\d{2}-01$/, "Pick a valid month.");
 
 /**
  * Save the maintenance amount for every vehicle for one month in a single
  * submit. Fields are `amount-<vehicleId>`; blank means "no fee", which
  * removes any existing row so the month reads as zero rather than stale.
  */
-export async function saveMonthlyFees(
-  month: string,
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function saveMonthlyFees(month: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsedMonth = monthSchema.safeParse(month);
   if (!parsedMonth.success) {
     return { error: parsedMonth.error.issues[0]?.message ?? "Invalid month." };
@@ -72,10 +61,7 @@ export async function saveMonthlyFees(
       }
 
       const mechanicRaw = formData.get(`mechanic-${vehicleId}`);
-      const mechanicId =
-        mechanicRaw && String(mechanicRaw) !== "none"
-          ? String(mechanicRaw)
-          : null;
+      const mechanicId = mechanicRaw && String(mechanicRaw) !== "none" ? String(mechanicRaw) : null;
 
       upserts.push({
         user_id: user.id,
@@ -87,18 +73,12 @@ export async function saveMonthlyFees(
     }
 
     if (upserts.length > 0) {
-      const { error } = await supabase
-        .from("maintenance_fees")
-        .upsert(upserts, { onConflict: "vehicle_id,month" });
+      const { error } = await supabase.from("maintenance_fees").upsert(upserts, { onConflict: "vehicle_id,month" });
       if (error) return { error: error.message };
     }
 
     if (clears.length > 0) {
-      const { error } = await supabase
-        .from("maintenance_fees")
-        .delete()
-        .eq("month", parsedMonth.data)
-        .in("vehicle_id", clears);
+      const { error } = await supabase.from("maintenance_fees").delete().eq("month", parsedMonth.data).in("vehicle_id", clears);
       if (error) return { error: error.message };
     }
   } catch (e) {
@@ -118,10 +98,7 @@ const mechanicSchema = z.object({
   city: z.string().trim().max(60).optional().or(z.literal("")),
 });
 
-export async function addMechanic(
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function addMechanic(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = mechanicSchema.safeParse({
     name: formData.get("name"),
     workshop: formData.get("workshop"),
@@ -172,10 +149,7 @@ export async function deleteMaintenanceFee(id: string): Promise<ActionResult> {
   if (!id) return { error: "Missing id." };
   try {
     const { supabase } = await requireUser();
-    const { error } = await supabase
-      .from("maintenance_fees")
-      .delete()
-      .eq("id", id);
+    const { error } = await supabase.from("maintenance_fees").delete().eq("id", id);
     if (error) return { error: error.message };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Something went wrong." };

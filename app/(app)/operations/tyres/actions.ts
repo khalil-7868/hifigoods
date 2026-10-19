@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { TablesUpdate, Tyre, TyreStatus } from "@/lib/database.types";
@@ -19,13 +18,9 @@ export interface ActionResult {
  * share a single verification.
  */
 async function requireUser() {
-  const [supabase, user] = await Promise.all([
-    createClient(),
-    requireCurrentUser(),
-  ]);
+  const [supabase, user] = await Promise.all([createClient(), requireCurrentUser()]);
   return { supabase, user };
 }
-
 
 const tyreSchema = z
   .object({
@@ -42,14 +37,10 @@ const tyreSchema = z
     retread_count: z.coerce.number().min(0).max(20),
     notes: z.string().trim().max(500).optional().or(z.literal("")),
   })
-  .refine(
-    (v) =>
-      !v.odometer_removed || Number(v.odometer_removed) >= v.odometer_fitted,
-    {
-      message: "Removed reading must be at or above the fitted reading.",
-      path: ["odometer_removed"],
-    },
-  );
+  .refine((v) => !v.odometer_removed || Number(v.odometer_removed) >= v.odometer_fitted, {
+    message: "Removed reading must be at or above the fitted reading.",
+    path: ["odometer_removed"],
+  });
 
 function readTyre(formData: FormData) {
   return tyreSchema.safeParse({
@@ -79,18 +70,13 @@ function toRow(data: z.infer<typeof tyreSchema>) {
     purchase_cost: data.purchase_cost,
     purchase_date: data.purchase_date,
     odometer_fitted: data.odometer_fitted,
-    odometer_removed: data.odometer_removed
-      ? Number(data.odometer_removed)
-      : null,
+    odometer_removed: data.odometer_removed ? Number(data.odometer_removed) : null,
     retread_count: data.retread_count,
     notes: data.notes || null,
   };
 }
 
-export async function addTyre(
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function addTyre(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = readTyre(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -98,9 +84,7 @@ export async function addTyre(
 
   try {
     const { supabase, user } = await requireUser();
-    const { error } = await supabase
-      .from("tyres")
-      .insert({ user_id: user.id, ...toRow(parsed.data) });
+    const { error } = await supabase.from("tyres").insert({ user_id: user.id, ...toRow(parsed.data) });
     if (error) return { error: error.message };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Something went wrong." };
@@ -110,11 +94,7 @@ export async function addTyre(
   return { success: true };
 }
 
-export async function updateTyre(
-  tyreId: string,
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
+export async function updateTyre(tyreId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const parsed = readTyre(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -122,10 +102,7 @@ export async function updateTyre(
 
   try {
     const { supabase } = await requireUser();
-    const { error } = await supabase
-      .from("tyres")
-      .update(toRow(parsed.data))
-      .eq("id", tyreId);
+    const { error } = await supabase.from("tyres").update(toRow(parsed.data)).eq("id", tyreId);
     if (error) return { error: error.message };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Something went wrong." };
@@ -142,19 +119,11 @@ export async function updateTyre(
  * baseline — a retreaded tyre starts a fresh life, so measuring it from the
  * original fitting would understate every km figure from then on.
  */
-export async function setTyreStatus(
-  tyreId: string,
-  status: TyreStatus,
-  currentOdometer: number,
-): Promise<ActionResult> {
+export async function setTyreStatus(tyreId: string, status: TyreStatus, currentOdometer: number): Promise<ActionResult> {
   try {
     const { supabase } = await requireUser();
 
-    const { data: tyre, error: readError } = await supabase
-      .from("tyres")
-      .select("retread_count, odometer_fitted")
-      .eq("id", tyreId)
-      .maybeSingle();
+    const { data: tyre, error: readError } = await supabase.from("tyres").select("retread_count, odometer_fitted").eq("id", tyreId).maybeSingle();
     if (readError) return { error: readError.message };
     if (!tyre) return { error: "Tyre not found." };
 
@@ -162,25 +131,16 @@ export async function setTyreStatus(
 
     if (status === "retreaded") {
       patch.retread_count = Number(tyre.retread_count) + 1;
-      patch.odometer_fitted = Math.max(
-        Number(tyre.odometer_fitted),
-        currentOdometer,
-      );
+      patch.odometer_fitted = Math.max(Number(tyre.odometer_fitted), currentOdometer);
       patch.odometer_removed = null;
     } else if (status === "scrapped") {
-      patch.odometer_removed = Math.max(
-        Number(tyre.odometer_fitted),
-        currentOdometer,
-      );
+      patch.odometer_removed = Math.max(Number(tyre.odometer_fitted), currentOdometer);
     } else if (status === "in_use") {
       // Refitting clears the removal reading so km life runs again.
       patch.odometer_removed = null;
     }
 
-    const { error } = await supabase
-      .from("tyres")
-      .update(patch)
-      .eq("id", tyreId);
+    const { error } = await supabase.from("tyres").update(patch).eq("id", tyreId);
     if (error) return { error: error.message };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Something went wrong." };
@@ -191,18 +151,11 @@ export async function setTyreStatus(
 }
 
 /** Deletes a tyre and hands the row back so the client can offer Undo. */
-export async function deleteTyre(
-  tyreId: string,
-): Promise<ActionResult & { restore?: Tyre }> {
+export async function deleteTyre(tyreId: string): Promise<ActionResult & { restore?: Tyre }> {
   let restore: Tyre | undefined;
   try {
     const { supabase } = await requireUser();
-    const { data, error } = await supabase
-      .from("tyres")
-      .delete()
-      .eq("id", tyreId)
-      .select()
-      .maybeSingle();
+    const { data, error } = await supabase.from("tyres").delete().eq("id", tyreId).select().maybeSingle();
     if (error) return { error: error.message };
     restore = data ?? undefined;
   } catch (e) {
@@ -243,19 +196,13 @@ export async function restoreTyre(row: Tyre): Promise<ActionResult> {
 }
 
 /** Keeps a vehicle's odometer current — every km figure depends on it. */
-export async function updateVehicleOdometer(
-  vehicleId: string,
-  odometer: number,
-): Promise<ActionResult> {
+export async function updateVehicleOdometer(vehicleId: string, odometer: number): Promise<ActionResult> {
   if (!Number.isFinite(odometer) || odometer < 0) {
     return { error: "Enter a valid odometer reading." };
   }
   try {
     const { supabase } = await requireUser();
-    const { error } = await supabase
-      .from("vehicles")
-      .update({ odometer })
-      .eq("id", vehicleId);
+    const { error } = await supabase.from("vehicles").update({ odometer }).eq("id", vehicleId);
     if (error) return { error: error.message };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Something went wrong." };

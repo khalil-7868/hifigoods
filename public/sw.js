@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-globals */
 /**
  * HiFiGoods service worker — hand-rolled, no build-time dependency.
  *
@@ -31,23 +30,14 @@ const PAGES_CACHE = `hifigoods-pages-${VERSION}`;
 const OFFLINE_URL = "/offline";
 
 /** Minimal shell so a cold offline start still renders something branded. */
-const PRECACHE = [
-  OFFLINE_URL,
-  "/manifest.webmanifest",
-  "/icon-192.png",
-  "/icon-512.png",
-];
+const PRECACHE = [OFFLINE_URL, "/manifest.webmanifest", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(STATIC_CACHE);
       // Individually, so one 404 can't fail the whole install.
-      await Promise.all(
-        PRECACHE.map((url) =>
-          cache.add(new Request(url, { cache: "reload" })).catch(() => {}),
-        ),
-      );
+      await Promise.all(PRECACHE.map((url) => cache.add(new Request(url, { cache: "reload" })).catch(() => {})));
       await self.skipWaiting();
     })(),
   );
@@ -57,16 +47,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
-      await Promise.all(
-        keys
-          .filter(
-            (k) =>
-              k.startsWith("hifigoods-") &&
-              k !== STATIC_CACHE &&
-              k !== PAGES_CACHE,
-          )
-          .map((k) => caches.delete(k)),
-      );
+      await Promise.all(keys.filter((k) => k.startsWith("hifigoods-") && k !== STATIC_CACHE && k !== PAGES_CACHE).map((k) => caches.delete(k)));
       await self.clients.claim();
     })(),
   );
@@ -85,21 +66,14 @@ self.addEventListener("message", (event) => {
     event.waitUntil(
       (async () => {
         const keys = await caches.keys();
-        await Promise.all(
-          keys.filter((k) => k.startsWith("hifigoods-")).map((k) => caches.delete(k)),
-        );
+        await Promise.all(keys.filter((k) => k.startsWith("hifigoods-")).map((k) => caches.delete(k)));
       })(),
     );
   }
 });
 
 function isStaticAsset(url) {
-  return (
-    url.pathname.startsWith("/_next/static/") ||
-    url.pathname.startsWith("/icon") ||
-    url.pathname === "/manifest.webmanifest" ||
-    /\.(?:css|js|woff2?|png|jpg|jpeg|svg|webp|ico)$/.test(url.pathname)
-  );
+  return url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icon") || url.pathname === "/manifest.webmanifest" || /\.(?:css|js|woff2?|png|jpg|jpeg|svg|webp|ico)$/.test(url.pathname);
 }
 
 async function cacheFirst(request, cacheName) {
@@ -124,11 +98,7 @@ async function networkFirstPage(request) {
     // middleware bounces /dashboard to /login, and the browser follows it
     // transparently. Caching that would store the login page *as* /dashboard,
     // so the next offline visit would show a login form forever.
-    const cacheable =
-      response &&
-      response.ok &&
-      !response.redirected &&
-      response.type === "basic";
+    const cacheable = response && response.ok && !response.redirected && response.type === "basic";
 
     if (cacheable) cache.put(request, response.clone());
     return response;
