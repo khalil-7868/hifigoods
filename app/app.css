@@ -1,0 +1,259 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+
+/* =============================================================================
+   HiFiGoods — Design System (Tailwind CSS v4, CSS-first config)
+
+   Palette (from the brand swatches):
+     Deep teal-navy  #102C3E   surfaces / canvas
+     Slate           #474A5A   secondary / muted
+     Terracotta      #A76F62   expense + light-mode primary
+     Peach           #DA9C7D   primary accent on dark
+
+   Type: Plus Jakarta Sans (headings) · Inter (body)
+   ========================================================================== */
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-profit: hsl(var(--profit));
+  --color-profit-foreground: hsl(var(--profit-foreground));
+  --color-profit-muted: hsl(var(--profit-muted));
+
+  --color-expense: hsl(var(--expense));
+  --color-expense-foreground: hsl(var(--expense-foreground));
+  --color-expense-muted: hsl(var(--expense-muted));
+
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+
+  --color-info: hsl(var(--info));
+  --color-info-foreground: hsl(var(--info-foreground));
+  --color-info-muted: hsl(var(--info-muted));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-jakarta), var(--font-inter), ui-sans-serif, sans-serif;
+}
+
+/* ------------------------------- Light mode ------------------------------- */
+:root {
+  --background: 30 30% 97%;
+  --foreground: 203 45% 14%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 203 45% 14%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 203 45% 14%;
+
+  --primary: 11 40% 48%;
+  --primary-foreground: 30 40% 98%;
+
+  --secondary: 25 25% 92%;
+  --secondary-foreground: 203 40% 22%;
+
+  --muted: 25 20% 93%;
+  --muted-foreground: 210 10% 42%;
+
+  --accent: 20 45% 93%;
+  --accent-foreground: 11 40% 34%;
+
+  --profit: 165 50% 32%;
+  --profit-foreground: 0 0% 100%;
+  --profit-muted: 165 45% 93%;
+
+  --expense: 11 55% 48%;
+  --expense-foreground: 0 0% 100%;
+  --expense-muted: 14 60% 95%;
+
+  --warning: 30 68% 45%;
+  --warning-foreground: 30 60% 97%;
+
+  --info: 197 50% 36%;
+  --info-foreground: 0 0% 100%;
+  --info-muted: 197 45% 93%;
+
+  --destructive: 8 62% 48%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 25 20% 87%;
+  --input: 25 20% 87%;
+  --ring: 11 40% 48%;
+
+  --chart-1: 11 45% 52%;
+  --chart-2: 165 45% 36%;
+  --chart-3: 20 56% 60%;
+  --chart-4: 197 45% 42%;
+  --chart-5: 231 18% 46%;
+
+  --radius: 0.85rem;
+}
+
+/* -------------------------------- Dark mode ------------------------------- */
+.dark {
+  --background: 203 55% 9%;
+  --foreground: 30 25% 94%;
+
+  --card: 203 40% 13%;
+  --card-foreground: 30 25% 94%;
+
+  --popover: 203 40% 13%;
+  --popover-foreground: 30 25% 94%;
+
+  --primary: 20 56% 67%;
+  --primary-foreground: 203 59% 12%;
+
+  --secondary: 231 14% 24%;
+  --secondary-foreground: 30 20% 92%;
+
+  --muted: 203 25% 18%;
+  --muted-foreground: 210 14% 68%;
+
+  --accent: 231 14% 26%;
+  --accent-foreground: 30 20% 92%;
+
+  --profit: 165 45% 48%;
+  --profit-foreground: 203 59% 10%;
+  --profit-muted: 165 35% 16%;
+
+  --expense: 11 55% 60%;
+  --expense-foreground: 203 59% 10%;
+  --expense-muted: 11 35% 20%;
+
+  --warning: 30 68% 62%;
+  --warning-foreground: 203 59% 10%;
+
+  --info: 197 45% 58%;
+  --info-foreground: 203 59% 10%;
+  --info-muted: 197 35% 18%;
+
+  --destructive: 8 62% 58%;
+  --destructive-foreground: 203 59% 10%;
+
+  --border: 203 25% 21%;
+  --input: 203 25% 23%;
+  --ring: 20 56% 67%;
+
+  --chart-1: 20 56% 67%;
+  --chart-2: 165 45% 52%;
+  --chart-3: 11 55% 62%;
+  --chart-4: 197 45% 60%;
+  --chart-5: 231 22% 62%;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  .font-display {
+    font-family: var(--font-display);
+  }
+}
+
+/* Soft radial glow used on hero / dashboard backdrops. */
+.glow-accent {
+  background-image:
+    radial-gradient(60% 60% at 15% 0%, hsl(20 56% 67% / 0.16), transparent 60%),
+    radial-gradient(50% 50% at 100% 0%, hsl(197 45% 58% / 0.12), transparent 55%);
+}
+
+/* =============================================================================
+   Print — /reports and route detail print preview.
+   ========================================================================== */
+@media print {
+  @page {
+    margin: 16mm;
+    size: A4;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+  [data-print-area],
+  [data-print-area] * {
+    visibility: visible;
+  }
+  [data-print-area] {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+  }
+
+  nav,
+  aside,
+  .no-print,
+  [data-no-print] {
+    display: none !important;
+  }
+
+  tr,
+  .print-keep-together {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  a[href]::after {
+    content: "";
+  }
+}
